@@ -16,7 +16,7 @@ Manage multiple Git identities with style, simplicity, and terminal UI ⚡
 ## 🚀 Quick Install
 
 ```bash
-curl -s https://raw.githubusercontent.com/YOUR_USERNAME/gitid/main/install.sh | bash
+curl -s https://raw.githubusercontent.com/jaybilgaye/gitid/main/install.sh | bash
 ```
 
 ✅ Requires: `jq`, `gum` (installed automatically via Homebrew)
