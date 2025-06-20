@@ -1,45 +1,46 @@
 #!/bin/bash
 
+set -e
+
 STORE="$HOME/.git-identities.json"
-[ ! -f "$STORE" ] && echo "[]" > "$STORE"
+DEFAULT_KEY="$HOME/.ssh/id_ed25519"
 
-echo "🔧 Add New Git Identity"
-read -p "👤 Enter display name: " NAME
-read -p "📧 Enter email address: " EMAIL
-read -p "🔖 Enter alias (e.g., jay, vibe, bmd): " ALIAS
-DEFAULT_KEY="$HOME/.ssh/id_ed25519_$ALIAS"
-read -p "🗂️  SSH key file path [$DEFAULT_KEY]: " SSH_KEY_PATH
-SSH_KEY_PATH=${SSH_KEY_PATH:-$DEFAULT_KEY}
+echo "🔧 Add a New Git Identity"
 
-echo ""
-gum style --padding "1 2" --border normal --foreground 212 --border-foreground 82 "
-📋 Review:
-👤 Name  : $NAME
-📧 Email : $EMAIL
-🔖 Alias : $ALIAS
-🔑 SSH   : $SSH_KEY_PATH
-"
-gum confirm "✅ Confirm adding this Git identity?" || { echo "❌ Cancelled."; exit 0; }
+read -r -p "👤 Enter display name: " NAME
+read -r -p "📧 Enter email address: " EMAIL
+read -r -p "🔖 Enter alias (e.g., jay, vibe, bmd): " ALIAS
+read -r -p "🗂️  SSH key file path [$DEFAULT_KEY]: " SSH_KEY_PATH
 
-if [ ! -f "$SSH_KEY_PATH" ]; then
-  echo "⚙️  SSH key not found. Generating..."
-  ssh-keygen -t ed25519 -C "$EMAIL" -f "$SSH_KEY_PATH"
-else
-  echo "✅ SSH key already exists."
+SSH_KEY_PATH="${SSH_KEY_PATH:-$DEFAULT_KEY}"
+
+echo
+echo "📝 Please confirm the details:"
+echo "👤 Name:  $NAME"
+echo "📧 Email: $EMAIL"
+echo "🔖 Alias: $ALIAS"
+echo "🗂️  SSH Key: $SSH_KEY_PATH"
+echo
+
+read -r -p "✅ Confirm and save? (y/n): " CONFIRM
+if [[ "$CONFIRM" != "y" ]]; then
+  echo "❌ Aborted."
+  exit 1
 fi
 
-jq --arg name "$NAME" --arg email "$EMAIL" --arg alias "$ALIAS" --arg ssh_key "$SSH_KEY_PATH"    '. += [{"name":$name, "email":$email, "alias":$alias, "ssh_key":$ssh_key}]' "$STORE" > "$STORE.tmp" && mv "$STORE.tmp" "$STORE"
+# Ensure file exists
+touch "$STORE"
+if ! jq empty "$STORE" 2>/dev/null; then
+  echo "[]" > "$STORE"
+fi
 
-echo "✅ Identity saved to $STORE"
+# Append identity using jq
+jq_output=$(jq --arg name "$NAME" \
+               --arg alias "$ALIAS" \
+               --arg email "$EMAIL" \
+               --arg ssh_key "$SSH_KEY_PATH" \
+               '. += [{"name": $name, "alias": $alias, "email": $email, "ssh_key": $ssh_key}]' "$STORE")
 
-gum confirm "🔐 Add to ~/.ssh/config as Host github-$ALIAS?" && {
-  echo -e "
-# $NAME ($ALIAS)
-Host github-$ALIAS
-  HostName github.com
-  User git
-  IdentityFile $SSH_KEY_PATH
-  IdentitiesOnly yes
-" >> ~/.ssh/config
-  echo "✅ SSH config updated."
-}
+echo "$jq_output" > "$STORE"
+
+echo "🎉 Identity added successfully!"
