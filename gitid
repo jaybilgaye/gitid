@@ -86,7 +86,7 @@ Host github-$ALIAS
     echo "✅ Identities imported to $STORE"
     ;;
   *)
-    echo "Git Identity Manager ⚡"
+    echo "Git Identity Manager ⚡ By jaybilgaye.github.io"
     echo "Usage:"
     echo "  gitid add          - Add a new identity"
     echo "  gitid list         - List all saved identities"
