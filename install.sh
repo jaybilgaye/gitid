@@ -2,7 +2,7 @@
 
 set -e
 
-REPO_URL="https://raw.githubusercontent.com/YOUR_USERNAME/gitid/main"
+REPO_URL="https://raw.githubusercontent.com/jaybilgaye/gitid/main"
 INSTALL_PATH="/usr/local/bin/gitid"
 ADD_SCRIPT_PATH="$HOME/.gitid/add.sh"
 
