@@ -10,32 +10,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: 📥 Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set up environment
+      - name: 🛠 Set up environment
         run: sudo apt-get update && sudo apt-get install -y jq shellcheck zip
 
-      - name: Lint all scripts
+      - name: ✅ Lint all scripts
         run: |
           shellcheck gitid
           shellcheck .gitid/add.sh
           shellcheck install.sh
 
-      - name: Run basic CLI test
+      - name: 🧪 Run basic CLI test
         run: |
           chmod +x gitid .gitid/add.sh
           ./gitid current || echo "No Git identity set yet."
 
-      - name: Package release
+      - name: 📦 Package CLI for release
         run: |
           mkdir build
           cp gitid install.sh README.md LICENSE build/
           mkdir -p build/.gitid && cp .gitid/add.sh build/.gitid/
           cd build && zip -r gitid-cli.zip .
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+      - name: 🚀 Upload Artifact
+        uses: actions/upload-artifact@v4
         with:
           name: gitid-cli
           path: build/gitid-cli.zip
