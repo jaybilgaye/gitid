@@ -1,0 +1,100 @@
+#!/bin/bash
+STORE="$HOME/.git-identities.json"
+CHOOSE_SCRIPT="/usr/local/bin/gitid"
+
+ensure_deps() {
+  command -v gum >/dev/null || { echo "❌ gum missing. Install via: brew install gum"; exit 1; }
+  command -v jq >/dev/null || { echo "❌ jq missing. Install via: brew install jq"; exit 1; }
+}
+
+case "$1" in
+  add)
+    ensure_deps
+    bash ~/.gitid/add.sh
+    ;;
+  list)
+    jq '.' "$STORE"
+    ;;
+  current)
+    echo "👤 $(git config user.name)"
+    echo "📧 $(git config user.email)"
+    ;;
+  switch)
+    ensure_deps
+    NAME=$(jq -r '.[].name' "$STORE" | gum choose)
+    IDENTITY=$(jq ".[] | select(.name==\"$NAME\")" "$STORE")
+    git config user.name "$(echo "$IDENTITY" | jq -r '.name')"
+    git config user.email "$(echo "$IDENTITY" | jq -r '.email')"
+    echo "✅ Switched to $NAME"
+    ;;
+  config-ssh)
+    ensure_deps
+    SSH_FILE="$HOME/.ssh/config"
+    BACKUP_FILE="$SSH_FILE.bkp.$(date +%Y%m%d-%H%M%S)"
+    if [ -f "$SSH_FILE" ]; then
+      cp "$SSH_FILE" "$BACKUP_FILE"
+      echo "🛡️  Backup created: $BACKUP_FILE"
+    fi
+    > "$SSH_FILE"
+    for row in $(jq -c '.[]' "$STORE"); do
+      NAME=$(echo "$row" | jq -r '.name')
+      ALIAS=$(echo "$row" | jq -r '.alias')
+      KEY=$(echo "$row" | jq -r '.ssh_key')
+      echo -e "# $NAME
+Host github-$ALIAS
+  HostName github.com
+  User git
+  IdentityFile $KEY
+  IdentitiesOnly yes
+" >> "$SSH_FILE"
+    done
+    echo "✅ ~/.ssh/config regenerated from saved identities"
+    ;;
+  remove)
+    ensure_deps
+    NAME=$(jq -r '.[].name' "$STORE" | gum choose)
+    TMP=$(mktemp)
+    jq --arg name "$NAME" 'del(.[] | select(.name == $name))' "$STORE" > "$TMP" && mv "$TMP" "$STORE"
+    echo "🗑️  Removed identity: $NAME"
+    ;;
+  test)
+    CURRENT_EMAIL=$(git config user.email)
+    MATCH=$(jq -r --arg email "$CURRENT_EMAIL" '.[] | select(.email==$email) | .name' "$STORE")
+    if [[ -n "$MATCH" ]]; then
+      echo "✅ You are using: $MATCH <$CURRENT_EMAIL>"
+    else
+      echo "⚠️  Current identity ($CURRENT_EMAIL) is not found in your identity store"
+    fi
+    ;;
+  import-ssh)
+    ensure_deps
+    echo "📥 Importing identities from ~/.ssh/config..."
+    jq_output="[]"
+    while read -r line; do
+      case $line in
+        \#*) name="${line#\# }" ;;
+        Host\ github-*) alias="${line#Host github-}" ;;
+        IdentityFile*) ssh_key="${line#IdentityFile }" ;;
+      esac
+      if [[ -n "$name" && -n "$alias" && -n "$ssh_key" ]]; then
+        email=$(gum input --placeholder "Enter email for $name <$alias>")
+        jq_output=$(echo "$jq_output" | jq ". += [{"name": "$name", "alias": "$alias", "email": "$email", "ssh_key": "$ssh_key"}]")
+        name=""; alias=""; ssh_key=""
+      fi
+    done < ~/.ssh/config
+    echo "$jq_output" > "$STORE"
+    echo "✅ Identities imported to $STORE"
+    ;;
+  *)
+    echo "Git Identity Manager ⚡"
+    echo "Usage:"
+    echo "  gitid add          - Add a new identity"
+    echo "  gitid list         - List all saved identities"
+    echo "  gitid switch       - Select and apply identity"
+    echo "  gitid current      - Show active Git identity"
+    echo "  gitid config-ssh   - Generate ~/.ssh/config"
+    echo "  gitid remove       - Remove an identity"
+    echo "  gitid test         - Check if current identity is valid"
+    echo "  gitid import-ssh   - Import from ~/.ssh/config"
+    ;;
+esac
