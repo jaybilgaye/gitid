@@ -57,7 +57,7 @@ case "$1" in
     ;;
 
   *)
-    echo "Git Identity Manager ⚡"
+    echo "Git Identity Manager ⚡ - jaybilgaye.github.io"
     echo "Usage:"
     echo "  gitid add          - Add a new identity"
     echo "  gitid list         - List all saved identities"
