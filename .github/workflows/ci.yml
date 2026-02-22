@@ -16,16 +16,16 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y shellcheck
 
       - name: Lint bin/gitid
-        run: shellcheck bin/gitid
+        run: shellcheck -x bin/gitid
 
       - name: Lint lib/
-        run: shellcheck lib/*.sh
+        run: shellcheck -x lib/*.sh
 
       - name: Lint commands/
-        run: shellcheck commands/*.sh
+        run: shellcheck -x commands/*.sh
 
       - name: Lint install.sh
-        run: shellcheck install.sh
+        run: shellcheck -x install.sh
 
   test:
     name: Test
@@ -88,7 +88,7 @@ jobs:
       - name: Build release archive
         run: |
           mkdir -p dist
-          zip -r dist/gitid-v2.zip bin/ lib/ commands/ install.sh README.md LICENSE ARCHITECTURE.md
+          zip -r dist/gitid-v2.zip bin/ lib/ commands/ install.sh README.md ARCHITECTURE.md
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
