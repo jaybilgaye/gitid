@@ -1,24 +1,51 @@
-# gitid v2 — Git Identity Manager
+<div align="center">
 
-**Author:** Jay · [jaybilgaye.github.io](https://jaybilgaye.github.io) · MIT License
+# 🪪 gitid
 
-Manage multiple Git identities (name, email, SSH keys) from the terminal.
-Switch between work, personal, and client profiles in one command.
+### Switch Git identities in one command — work, personal, and client profiles, sorted.
 
-## Features
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Shell: Bash](https://img.shields.io/badge/Shell-Bash-4EAA25?logo=gnubash&logoColor=white)](https://www.gnu.org/software/bash/)
+[![Platform: macOS + Linux](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux-lightgrey?logo=apple)](https://github.com/jaybilgaye/gitid)
+[![Version](https://img.shields.io/badge/version-v2-orange)](https://github.com/jaybilgaye/gitid)
+[![Maintained by Jay](https://img.shields.io/badge/maintained%20by-Jay-blueviolet)](https://jaybilgaye.github.io)
 
-| Command | Description |
+</div>
+
+---
+
+## 😤 The Problem
+
+You juggle **multiple GitHub accounts** — work, personal, maybe a client or two.
+
+Every time you switch context, you either:
+
+- 😬 Push a commit to a client repo with your personal email
+- 🔑 Fight SSH key conflicts between accounts
+- 📋 Manually edit `~/.gitconfig` or `~/.ssh/config` and forget something
+- 🤦 Google "how to switch git user" for the 50th time
+
+**gitid fixes all of this in a single command.**
+
+---
+
+## ✨ Features
+
+| Feature | Description |
 |---------|-------------|
-| `gitid add` | Add a new identity |
-| `gitid list` | List all saved identities |
-| `gitid switch` | Apply an identity to the current repo |
-| `gitid current` | Show the active git identity |
-| `gitid remove` | Remove a saved identity |
-| `gitid config-ssh` | Sync identities to `~/.ssh/config` (non-destructive) |
-| `gitid test` | Test SSH connection for an identity |
-| `gitid import-ssh` | Import from an existing `~/.ssh/config` |
+| 🔀 **One-command switch** | `gitid switch` applies name, email & SSH key instantly |
+| 🔒 **Secure storage** | Identity store at `~/.gitid/` with `600`/`700` permissions |
+| 🛡️ **Non-destructive SSH** | Only manages its own block in `~/.ssh/config` — never touches your other entries |
+| 💾 **Atomic writes** | Zero risk of a corrupt identity store on interrupted writes |
+| 🎨 **Rich TUI** | Beautiful menus with [gum](https://github.com/charmbracelet/gum) — falls back gracefully to plain prompts |
+| 📥 **Import existing SSH config** | One command to pull in your existing `Host github-*` entries |
+| 🔁 **Hooks** | `post-switch` hook for custom automation (re-sign commits, update prompts, etc.) |
+| 🧪 **SSH test** | Verify an identity's SSH connection before committing |
+| 🚀 **No runtime deps** | Just `bash`, `git`, and `jq` — all auto-installed by the installer |
 
-## Install
+---
+
+## 🚀 Quick Install
 
 ```bash
 git clone https://github.com/jaybilgaye/gitid.git
@@ -26,167 +53,198 @@ cd gitid
 bash install.sh
 ```
 
-Requires: `jq`, `git` (auto-installed by `install.sh` if missing)
-Optional: `gum` (rich TUI; falls back to plain prompts without it)
+That's it. The installer handles `jq` and `git` automatically.
 
-## Uninstall
+> **Optional:** Install [gum](https://github.com/charmbracelet/gum) for a beautiful interactive TUI.
+> gitid works perfectly without it — gum is a quality-of-life upgrade only.
 
-```bash
-# 1. Remove the binary symlink
-rm -f /usr/local/bin/gitid          # default location
-# or, if installed to ~/.local/bin:
-rm -f ~/.local/bin/gitid
+---
 
-# 2. Remove all gitid data and scripts
-rm -rf ~/.gitid
+## 📖 How It Works
 
-# 3. (Optional) Remove the gitid block from ~/.ssh/config
-#    Open ~/.ssh/config and delete the lines between:
-#      # BEGIN gitid managed block
-#      # END gitid managed block
+```
+You run: gitid switch
+              │
+              ▼
+  ┌───────────────────────┐
+  │  Pick an identity     │  ← gum selector (or plain list)
+  │  > work               │
+  │    personal           │
+  │    client-acme        │
+  └───────────┬───────────┘
+              │
+              ▼
+  ┌───────────────────────┐
+  │  gitid applies:       │
+  │  git config user.name │  ← scoped to current repo only
+  │  git config user.email│
+  └───────────┬───────────┘
+              │
+              ▼
+  ┌───────────────────────┐
+  │  SSH key wired up     │  ← via ~/.ssh/config managed block
+  │  Host github-work     │
+  │    IdentityFile ...   │
+  └───────────────────────┘
+              │
+              ▼
+         ✅ Done. Commits now go out as the right person.
 ```
 
-> Your SSH keys, git config, and any repos are untouched — only the files
-> created by `install.sh` are removed.
+---
 
-### Platform support
+## 🎯 Example Walkthrough
 
-| Platform | Tested | Auto-installs deps |
-|----------|--------|--------------------|
-| macOS (Intel + Apple Silicon) | ✅ | via Homebrew |
-| Ubuntu / Debian | ✅ | via apt-get |
-| Fedora / RHEL | ✅ | via dnf |
-| Arch Linux | ✅ | via pacman |
-| Other Linux | ✅ | manual install required |
-
-## Quick Start
+### Step 1 — Add your identities
 
 ```bash
-# 1a. Add a new identity manually
 gitid add
-# → prompts for name, email, alias, SSH key path
+# Prompts:
+#   Name      → Jay Work
+#   Email     → jay@company.com
+#   Alias     → work
+#   SSH key   → ~/.ssh/id_ed25519_work
 
-# 1b. OR import existing Host entries from ~/.ssh/config
+gitid add
+#   Name      → Jay Personal
+#   Email     → jay@gmail.com
+#   Alias     → personal
+#   SSH key   → ~/.ssh/id_ed25519_personal
+```
+
+Already have `Host github-*` entries in `~/.ssh/config`? Import them instead:
+
+```bash
 gitid import-ssh
-# → reads all 'Host github-<alias>' entries; prompts for name & email only
+# Reads all 'Host github-<alias>' blocks; prompts only for name & email
+```
 
-# 2. Sync identities into ~/.ssh/config (only touches gitid's own block)
+### Step 2 — Wire up SSH
+
+```bash
 gitid config-ssh
+# Writes a gitid-managed block into ~/.ssh/config
+# Your existing SSH config is untouched
+```
 
-# 3. Switch identity — must be inside a git repo
-cd ~/code/my-work-project
+### Step 3 — Switch identity in any repo
+
+```bash
+cd ~/code/work-project
 gitid switch
+# Select: work
+# ✅ Switched to work (jay@company.com)
 
-# 4. Verify
+cd ~/code/personal-site
+gitid switch
+# Select: personal
+# ✅ Switched to personal (jay@gmail.com)
+```
+
+### Step 4 — Verify
+
+```bash
 gitid current
+# Active identity : work
+# git user.name   : Jay Work
+# git user.email  : jay@company.com
 ```
 
-> **`fatal: not in a git directory`** — If you see this error after `gitid switch`,
-> you are not inside a git repository. `gitid switch` sets `git config user.name`
-> and `git config user.email` locally on the current repo.
-> Always `cd` into a project directory first:
-> ```bash
-> cd ~/code/my-project   # ← must be a git repo
-> gitid switch
-> ```
+### Step 5 — Update your remote URL
 
-## SSH Host Alias Naming
+After `gitid config-ssh`, push/pull via the alias host:
 
-gitid uses the convention `Host github-<alias>` in `~/.ssh/config`. The `<alias>`
-is a short identifier you choose (e.g. `work`, `personal`, `jay`, `bmd`).
+```bash
+git remote set-url origin git@github-work:acme/backend.git
+git remote set-url origin git@github-personal:jay/my-site.git
+```
 
-**Your `~/.ssh/config` entries must follow this pattern** for `gitid import-ssh`
-to detect them automatically:
+---
+
+## 📋 All Commands
+
+| Command | What it does |
+|---------|-------------|
+| `gitid add` | Add a new identity (interactive) |
+| `gitid list` | List all saved identities |
+| `gitid switch` | Apply an identity to the current repo |
+| `gitid current` | Show the active git identity |
+| `gitid remove` | Remove a saved identity |
+| `gitid config-ssh` | Sync identities to `~/.ssh/config` |
+| `gitid test` | Test SSH connection for an identity |
+| `gitid import-ssh` | Import `Host github-<alias>` entries from `~/.ssh/config` |
+| `gitid uninstall` | Cleanly remove gitid from your system |
+
+---
+
+## 🖥️ Platform Support
+
+| Platform | Status | Deps auto-installed via |
+|----------|--------|------------------------|
+| macOS (Intel + Apple Silicon) | ✅ Tested | Homebrew |
+| Ubuntu / Debian | ✅ Tested | apt-get |
+| Fedora / RHEL | ✅ Tested | dnf |
+| Arch Linux | ✅ Tested | pacman |
+| Other Linux | ✅ Works | manual install required |
+
+---
+
+## 🗂️ How Data Is Stored
 
 ```
-# ✅ Recognised by gitid import-ssh
-Host github-jay
-  HostName github.com
-  User git
-  IdentityFile ~/.ssh/id_ed25519_jay
-  IdentitiesOnly yes
+~/.gitid/
+├── identities.json    ← identity store (chmod 600)
+├── lib/               ← library scripts
+├── commands/          ← command scripts
+├── hooks/             ← optional automation hooks
+└── backups/           ← timestamped SSH config backups
+```
 
+Your SSH keys, git config, and repos are **never touched** by gitid outside of these files.
+
+---
+
+## 🔁 Hooks
+
+Drop executable scripts into `~/.gitid/hooks/` to run custom logic after a switch:
+
+```bash
+# ~/.gitid/hooks/post-switch
+#!/usr/bin/env bash
+echo "Switched to $1 — remember to check your GPG signing key"
+```
+
+---
+
+## 🔑 SSH Host Alias Naming
+
+gitid uses the `Host github-<alias>` convention. Your `~/.ssh/config` entries **must** follow this pattern for `gitid import-ssh` to detect them:
+
+```
+# ✅ Recognised
 Host github-work
   HostName github.com
-  ...
+  User git
+  IdentityFile ~/.ssh/id_ed25519_work
+  IdentitiesOnly yes
 
-# ❌ NOT recognised — different naming scheme
+# ❌ NOT recognised
 Host my-github
 Host work.github.com
 ```
 
-The alias must start with `github-`. Everything after `github-` becomes the alias
-inside gitid (e.g. `Host github-jay` → alias `jay`).
+The alias is everything after `github-` (e.g. `Host github-work` → alias `work`).
 
-## SSH Remote URLs
+---
 
-After running `gitid config-ssh`, each identity gets a dedicated SSH host:
-
-```
-Host github-work       →  git@github-work:org/repo.git
-Host github-personal   →  git@github-personal:user/repo.git
-```
-
-Set your remote to use the alias host:
-
-```bash
-git remote set-url origin git@github-work:acme/backend.git
-```
-
-## Hooks
-
-Place executable scripts in `~/.gitid/hooks/` to run automatically:
-
-```
-~/.gitid/hooks/post-switch   # Called after 'gitid switch'; receives alias as $1
-```
-
-Example:
-```bash
-#!/usr/bin/env bash
-# ~/.gitid/hooks/post-switch
-echo "Switched to $1 — remember to check your GPG signing key"
-```
-
-## Storage
-
-```
-~/.gitid/
-├── identities.json    # Identity store (chmod 600)
-├── lib/               # Library scripts
-├── commands/          # Command scripts
-├── hooks/             # Optional hook scripts
-└── backups/           # SSH config backups (created before every config-ssh run)
-```
-
-## Migrating from gitid v1
-
-If you have a `~/.git-identities.json` from v1, import it:
-
-```bash
-# v1 used a flat array; convert it manually or re-add via gitid add
-gitid add
-```
-
-Or use `gitid import-ssh` if your SSH config already has the host entries.
-
-## Troubleshooting
+## 🛠️ Troubleshooting
 
 ### `fatal: not in a git directory`
 
-```
-$ gitid switch
-...
-fatal: not in a git directory
-```
-
-`gitid switch` sets `git config user.name` and `git config user.email` **locally**
-on the current repository. Running it outside a git repo causes this error.
-
-**Fix:** `cd` into a git project first.
+`gitid switch` sets `git config` **locally** on the current repo — you must be inside one:
 
 ```bash
-cd ~/code/my-project
+cd ~/code/my-project   # ← must be a git repo
 gitid switch
 ```
 
@@ -194,25 +252,13 @@ gitid switch
 
 ### `gitid import-ssh` finds no entries
 
-```
-❌  No 'Host github-<alias>' entries found in ~/.ssh/config
-```
-
-Your SSH config hosts must be named `github-<alias>`. See the
-[SSH Host Alias Naming](#ssh-host-alias-naming) section above for the required
-format. If your hosts use a different naming scheme, add identities manually:
-
-```bash
-gitid add
-```
+Your SSH hosts must be named `github-<alias>`. If they use a different scheme, add identities manually with `gitid add`.
 
 ---
 
 ### Alias already exists on import
 
-If you already added an identity with `gitid add` and then run `gitid import-ssh`,
-entries with matching aliases are skipped (not duplicated). Remove the existing
-entry first if you want to re-import:
+Matching aliases are skipped to prevent duplicates. Remove first if you want to re-import:
 
 ```bash
 gitid remove <alias>
@@ -221,13 +267,30 @@ gitid import-ssh
 
 ---
 
-## Differences from v1
+## 🗑️ Uninstall
 
-- Non-destructive SSH config updates (only replaces gitid's own block)
-- Atomic writes — no store corruption on interrupted writes
-- All commands implemented (remove, test, import-ssh were stubs in v1)
-- Input validation — email format, alias character rules, SSH key existence check
-- No shell injection — all jq queries use `--arg` flags
-- Active identity pointer — unambiguous tracking across identities sharing an email
-- gum is optional — works in plain terminals and CI
-- File permissions hardened at creation (600/700)
+```bash
+gitid uninstall
+# or manually:
+rm -f /usr/local/bin/gitid    # (or ~/.local/bin/gitid)
+rm -rf ~/.gitid
+# Remove the gitid block from ~/.ssh/config if present
+```
+
+---
+
+## 🔄 Migrating from gitid v1
+
+v1 used `~/.git-identities.json`. Just re-add your identities:
+
+```bash
+gitid add
+# or import from SSH config:
+gitid import-ssh
+```
+
+---
+
+## 📜 License
+
+MIT © [Jay](https://jaybilgaye.github.io)
