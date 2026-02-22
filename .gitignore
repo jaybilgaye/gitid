@@ -1,0 +1,4 @@
+dist/
+*.zip
+*.bkp
+.DS_Store

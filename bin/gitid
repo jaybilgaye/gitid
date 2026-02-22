@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# bin/gitid — entrypoint for the gitid CLI
+#
+# Author:  Jay (jaybilgaye.github.io)
+# License: MIT
+#
+# In development (lib/ exists next to this script's parent): uses repo paths.
+# When installed (files live in ~/.gitid/): uses GITID_HOME.
+
+set -euo pipefail
+
+# Locate lib/ and commands/ relative to this script, supporting symlinks.
+_SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+_REPO_ROOT="$(cd "${_SELF_DIR}/.." && pwd)"
+
+if [[ -d "${_REPO_ROOT}/lib" ]]; then
+  # Development mode: run directly from the repo
+  LIB_DIR="${_REPO_ROOT}/lib"
+  CMD_DIR="${_REPO_ROOT}/commands"
+else
+  # Installed mode
+  GITID_HOME="${GITID_HOME:-$HOME/.gitid}"
+  LIB_DIR="${GITID_HOME}/lib"
+  CMD_DIR="${GITID_HOME}/commands"
+fi
+
+export GITID_HOME="${GITID_HOME:-$HOME/.gitid}"
+
+# shellcheck source=lib/deps.sh
+source "${LIB_DIR}/deps.sh"
+# shellcheck source=lib/ui.sh
+source "${LIB_DIR}/ui.sh"
+# shellcheck source=lib/validate.sh
+source "${LIB_DIR}/validate.sh"
+# shellcheck source=lib/store.sh
+source "${LIB_DIR}/store.sh"
+# shellcheck source=lib/ssh.sh
+source "${LIB_DIR}/ssh.sh"
+
+COMMAND="${1:-help}"
+shift || true
+
+case "$COMMAND" in
+  add)        deps_require_core; source "${CMD_DIR}/add.sh" ;;
+  list)       deps_require_core; source "${CMD_DIR}/list.sh" ;;
+  switch)     deps_require_core; source "${CMD_DIR}/switch.sh" ;;
+  current)    source "${CMD_DIR}/current.sh" ;;
+  remove)     deps_require_core; source "${CMD_DIR}/remove.sh" "$@" ;;
+  config-ssh) deps_require_core; source "${CMD_DIR}/config-ssh.sh" ;;
+  test)       deps_require_core; source "${CMD_DIR}/test.sh" "$@" ;;
+  import-ssh) deps_require_core; source "${CMD_DIR}/import-ssh.sh" ;;
+  help|--help|-h) source "${CMD_DIR}/help.sh" ;;
+  *)
+    ui_error "Unknown command: $COMMAND"
+    echo
+    source "${CMD_DIR}/help.sh"
+    exit 1
+    ;;
+esac

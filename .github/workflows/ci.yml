@@ -1,0 +1,97 @@
+name: gitid CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Lint bin/gitid
+        run: shellcheck bin/gitid
+
+      - name: Lint lib/
+        run: shellcheck lib/*.sh
+
+      - name: Lint commands/
+        run: shellcheck commands/*.sh
+
+      - name: Lint install.sh
+        run: shellcheck install.sh
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Make scripts executable
+        run: chmod +x bin/gitid lib/*.sh commands/*.sh install.sh
+
+      - name: Help text renders without error
+        run: ./bin/gitid help
+
+      - name: List with empty store
+        run: ./bin/gitid list
+
+      - name: Current shows git identity
+        run: ./bin/gitid current || true
+
+      - name: Store initialises correctly
+        run: |
+          ./bin/gitid list
+          jq '.' "${HOME}/.gitid/identities.json"
+
+      - name: Add identity non-interactively
+        run: |
+          # Simulate non-interactive add by pre-populating the store
+          cat > "${HOME}/.gitid/identities.json" << 'EOF'
+          {
+            "version": 1,
+            "active": null,
+            "identities": [
+              {
+                "name": "CI Test User",
+                "alias": "ci",
+                "email": "ci@example.com",
+                "ssh_key": "/tmp/fake_key"
+              }
+            ]
+          }
+          EOF
+          ./bin/gitid list
+
+      - name: Remove identity by alias
+        run: |
+          echo "y" | ./bin/gitid remove ci || true
+          ./bin/gitid list
+
+  package:
+    name: Package
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build release archive
+        run: |
+          mkdir -p dist
+          zip -r dist/gitid-v2.zip bin/ lib/ commands/ install.sh README.md LICENSE ARCHITECTURE.md
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitid-v2
+          path: dist/gitid-v2.zip
