@@ -4,7 +4,9 @@
 # gum requires both a binary and an interactive TTY.
 # Checking stdin (fd 0) and stdout (fd 1) covers pipes, CI, and redirected shells.
 _has_gum() {
-  command -v gum >/dev/null 2>&1 && [[ -t 0 ]] && [[ -t 1 ]]
+  command -v gum >/dev/null 2>&1 \
+    && gum --version >/dev/null 2>&1 \
+    && [[ -t 0 ]] && [[ -t 1 ]]
 }
 
 ui_error() {
