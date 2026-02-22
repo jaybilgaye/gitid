@@ -16,6 +16,7 @@ Commands:
   config-ssh   Sync identities to the gitid block in ~/.ssh/config
   test         Test SSH connection for an identity
   import-ssh   Import Host entries from existing ~/.ssh/config
+  uninstall    Remove gitid from the system
   help         Show this help
 
 Storage:

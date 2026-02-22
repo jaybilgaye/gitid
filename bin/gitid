@@ -50,6 +50,7 @@ case "$COMMAND" in
   config-ssh) deps_require_core; source "${CMD_DIR}/config-ssh.sh" ;;
   test)       deps_require_core; source "${CMD_DIR}/test.sh" "$@" ;;
   import-ssh) deps_require_core; source "${CMD_DIR}/import-ssh.sh" ;;
+  uninstall)  source "${CMD_DIR}/uninstall.sh" ;;
   help|--help|-h) source "${CMD_DIR}/help.sh" ;;
   *)
     ui_error "Unknown command: $COMMAND"
