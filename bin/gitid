@@ -9,11 +9,12 @@
 
 set -euo pipefail
 
-# Locate lib/ and commands/ relative to this script, supporting symlinks.
-_SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Locate lib/ and commands/ relative to this script, resolving symlinks.
+_SELF="$(readlink -f "${BASH_SOURCE[0]}")"
+_SELF_DIR="$(cd "$(dirname "${_SELF}")" && pwd)"
 _REPO_ROOT="$(cd "${_SELF_DIR}/.." && pwd)"
 
-if [[ -d "${_REPO_ROOT}/lib" ]]; then
+if [[ -f "${_REPO_ROOT}/lib/deps.sh" ]]; then
   # Development mode: run directly from the repo
   LIB_DIR="${_REPO_ROOT}/lib"
   CMD_DIR="${_REPO_ROOT}/commands"
